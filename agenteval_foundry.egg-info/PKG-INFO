@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: agenteval-foundry
+Version: 0.1.0
+Summary: Evaluation and fault-injection framework for AI agents
+Requires-Python: >=3.11
+Requires-Dist: pydantic>=2.7
+Requires-Dist: pyyaml>=6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"

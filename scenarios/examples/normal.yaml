@@ -1,0 +1,17 @@
+id: demo-normal-001
+version: 1
+name: Refund policy lookup
+
+query: Find the refund period for an annual subscription.
+
+expected:
+  required_tools:
+    - search_policy
+
+  required_claims:
+    - "14 days"
+
+  forbidden_claims:
+    - "30 days"
+
+fault_profile: null
