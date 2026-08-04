@@ -1,12 +1,27 @@
+from collections.abc import Callable
+from typing import Any, Protocol
+
 from aut.base import AgentMetadata, AgentRequest, AgentResult, ExecutionContext, ToolCallRecord
-from tools.registry import ToolRegistry
+from tools.base import ToolExecutor, ToolResult
+
+
+class SynthesisRecorder(Protocol):
+    """Optional instrumentation hook for deterministic answer construction."""
+
+    async def record(self, input_data: dict[str, Any], synthesize: Callable[[], str]) -> str:
+        ...
 
 # query -> StubAgent -> Tool_Registry -> Answer
 class StubAgent:
     """Deterministic reference agent that exercises the tool registry."""
 
-    def __init__(self, tool_registry: ToolRegistry) -> None:
+    def __init__(
+        self,
+        tool_registry: ToolExecutor,
+        synthesis_recorder: SynthesisRecorder | None = None,
+    ) -> None:
         self._tool_registry = tool_registry
+        self._synthesis_recorder = synthesis_recorder
         self.metadata = AgentMetadata(
             name="StubAgent",
             version="0.1.0",
@@ -27,18 +42,32 @@ class StubAgent:
             error=tool_result.error,
         )
 
-        if not tool_result.success:
-            return AgentResult(
-                answer="The refund policy could not be retrieved.",
-                agent_metadata=self.metadata,
-                tool_calls=[tool_call],
-                metadata={"run_id": context.run_id},
-            )
-
-        policy_text = str(tool_result.data.get("policy", tool_result.data))
+        answer = await self._synthesize_answer(tool_result)
         return AgentResult(
-            answer=f"Refund policy: {policy_text}",
+            answer=answer,
             agent_metadata=self.metadata,
             tool_calls=[tool_call],
             metadata={"run_id": context.run_id},
         )
+
+    async def _synthesize_answer(self, tool_result: ToolResult) -> str:
+        input_data = {
+            "tool_success": tool_result.success,
+            "tool_data": tool_result.data,
+            "tool_error": tool_result.error,
+        }
+
+        if self._synthesis_recorder is not None:
+            return await self._synthesis_recorder.record(
+                input_data=input_data,
+                synthesize=lambda: self._build_answer(tool_result),
+            )
+
+        return self._build_answer(tool_result)
+
+    def _build_answer(self, tool_result: ToolResult) -> str:
+        if not tool_result.success:
+            return "The refund policy could not be retrieved."
+
+        policy_text = str(tool_result.data.get("policy", tool_result.data))
+        return f"Refund policy: {policy_text}"

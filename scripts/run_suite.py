@@ -8,6 +8,12 @@ from aut.base import AgentRequest, ExecutionContext
 from aut.stub_agent import StubAgent
 from scenarios.loader import load_scenario
 from tools.mock_tools import build_default_tool_registry
+from tracing.collector import TraceCollector
+from tracing.instrumentation import (
+    TraceSynthesisRecorder,
+    TracingAgentExecutor,
+    TracingToolExecutor,
+)
 
 DEFAULT_SCENARIO_PATH = Path("scenarios/examples/normal.yaml")
 
@@ -23,9 +29,15 @@ async def run() -> None:
         raise SystemExit(1) from exc
 
     run_id = str(uuid4())
+    collector = TraceCollector(run_id=run_id)
     registry = build_default_tool_registry()
-    agent = StubAgent(registry)
-    result = await agent.execute(
+    tool_executor = TracingToolExecutor(registry, collector)
+    agent = StubAgent(
+        tool_registry=tool_executor,
+        synthesis_recorder=TraceSynthesisRecorder(collector),
+    )
+    traced_agent = TracingAgentExecutor(agent, collector)
+    result = await traced_agent.execute(
         AgentRequest(query=scenario.query, scenario_id=scenario.id),
         ExecutionContext(run_id=run_id, scenario_version=scenario.version),
     )
@@ -52,6 +64,16 @@ async def run() -> None:
         print(f"  Result: {tool_call.result}")
         if tool_call.error:
             print(f"  Error: {tool_call.error}")
+    print()
+    print(f"Trace ID: {collector.trace.trace_id}")
+    print("Trace summary:")
+    for span in collector.trace.spans:
+        parent = str(span.parent_span_id) if span.parent_span_id is not None else "ROOT"
+        latency = f"{span.latency_ms:.3f}" if span.latency_ms is not None else "n/a"
+        print(
+            f"- {span.node_type}: {span.name} | "
+            f"status={span.status} | parent={parent} | latency_ms={latency}"
+        )
 
 
 def main() -> None:

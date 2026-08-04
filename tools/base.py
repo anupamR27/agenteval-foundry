@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
@@ -22,3 +22,10 @@ class ToolDefinition(BaseModel):
     name: str
     description: str
     handler: ToolHandler
+
+
+class ToolExecutor(Protocol):
+    """Minimal async tool execution interface used by agents."""
+
+    async def execute(self, name: str, **arguments: object) -> ToolResult:
+        ...
