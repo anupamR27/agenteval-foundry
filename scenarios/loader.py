@@ -30,7 +30,7 @@ def load_scenario(path: Path) -> Scenario:
         # Payload = actual useful data
 
     if not isinstance(payload, dict):
-        raise ValueError(
+        raise TypeError(
             f"Scenario must contain a YAML object, received: {type(payload).__name__}"
         )
 

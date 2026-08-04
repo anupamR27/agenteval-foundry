@@ -16,11 +16,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-asyncio>=0.23",
     "ruff>=0.5"
 ]
 
 [tool.setuptools]
-packages = ["core", "scenarios", "scripts"]
+packages = ["aut", "core", "scenarios", "scripts", "tools"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
