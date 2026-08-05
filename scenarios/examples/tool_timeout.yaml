@@ -1,0 +1,26 @@
+id: demo-timeout-001
+version: 1
+name: Refund policy lookup with timeout
+query: Find the refund period for an annual subscription.
+
+expected:
+  required_tools:
+    - search_policy
+  required_claims: []
+  forbidden_claims: []
+  tool_outcomes:
+    - tool_name: search_policy
+      expected_success: false
+      expected_error_contains: timeout
+      expected_call_count: 1
+  response:
+    mode: SAFE_FAILURE
+    required_markers:
+      - could not be retrieved
+
+fault_profile:
+  - fault_type: TOOL_TIMEOUT
+    target_tool: search_policy
+    trigger: FIRST_CALL
+    parameters:
+      simulated_timeout_ms: 5000

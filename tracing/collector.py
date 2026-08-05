@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# CCTV for agent tracking.
 import time
 from contextvars import ContextVar, Token
 from datetime import UTC, datetime
@@ -9,6 +10,7 @@ from uuid import UUID
 
 from tracing.models import ExecutionTrace, TraceNodeType, TraceSpan, TraceStatus
 
+# Holds the active span for the current async execution context.
 _ACTIVE_SPAN_ID: ContextVar[UUID | None] = ContextVar("active_trace_span_id", default=None)
 
 

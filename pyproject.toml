@@ -21,7 +21,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["aut", "core", "scenarios", "scripts", "tools", "tracing"]
+packages = ["aut", "core", "evaluation", "evaluation.deterministic", "faults", "scenarios", "scripts", "tools", "tracing"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

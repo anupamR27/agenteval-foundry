@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 ToolHandler = Callable[..., Awaitable["ToolResult"]]
 
@@ -12,6 +12,7 @@ class ToolResult(BaseModel):
     success: bool
     data: Any = None
     error: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ToolDefinition(BaseModel):

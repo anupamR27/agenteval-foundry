@@ -1,16 +1,13 @@
-id: demo-normal-001
+id: demo-bad-retrieval-001
 version: 1
-name: Refund policy lookup
-
+name: Refund policy lookup with bad retrieval
 query: Find the refund period for an annual subscription.
 
 expected:
   required_tools:
     - search_policy
-
   required_claims:
     - "14 days"
-
   forbidden_claims:
     - "30 days"
   tool_outcomes:
@@ -18,4 +15,7 @@ expected:
       expected_success: true
       expected_call_count: 1
 
-fault_profile: null
+fault_profile:
+  - fault_type: BAD_RETRIEVAL
+    target_tool: search_policy
+    trigger: FIRST_CALL

@@ -69,5 +69,15 @@ class StubAgent:
         if not tool_result.success:
             return "The refund policy could not be retrieved."
 
-        policy_text = str(tool_result.data.get("policy", tool_result.data))
+        if not isinstance(tool_result.data, dict):
+            return "The returned policy data was invalid or unusable."
+
+        policy = tool_result.data.get("policy")
+        if not isinstance(policy, str) or not policy.strip():
+            return "The returned policy data was invalid or unusable."
+
+        policy_text = policy.strip()
+        if policy_text.endswith("..."):
+            return "The available policy information is incomplete or insufficient."
+
         return f"Refund policy: {policy_text}"

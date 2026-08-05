@@ -1,0 +1,24 @@
+id: demo-malformed-output-001
+version: 1
+name: Refund policy lookup with malformed output
+query: Find the refund period for an annual subscription.
+
+expected:
+  required_tools:
+    - search_policy
+  required_claims: []
+  forbidden_claims: []
+  tool_outcomes:
+    - tool_name: search_policy
+      expected_success: true
+      expected_call_count: 1
+  response:
+    mode: INVALID_DATA
+    required_markers:
+      - invalid
+      - unusable
+
+fault_profile:
+  - fault_type: MALFORMED_OUTPUT
+    target_tool: search_policy
+    trigger: FIRST_CALL

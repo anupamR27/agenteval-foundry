@@ -1,0 +1,23 @@
+id: demo-context-truncation-001
+version: 1
+name: Refund policy lookup with truncated context
+query: Find the refund period for an annual subscription.
+
+expected:
+  required_tools:
+    - search_policy
+  required_claims: []
+  forbidden_claims: []
+  tool_outcomes:
+    - tool_name: search_policy
+      expected_success: true
+      expected_call_count: 1
+  response:
+    mode: INCOMPLETE_INFORMATION
+    required_markers:
+      - incomplete
+
+fault_profile:
+  - fault_type: CONTEXT_TRUNCATION
+    target_tool: search_policy
+    trigger: FIRST_CALL
