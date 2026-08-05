@@ -7,6 +7,9 @@ from pydantic import ValidationError
 
 from aut.base import AgentRequest, ExecutionContext
 from aut.stub_agent import StubAgent
+from dag.builder import EvaluationDAGBuilder
+from dag.propagation import RootCauseAnalyzer
+from dag.validation import validate_dag
 from evaluation.context import EvaluationContext
 from evaluation.engine import DeterministicEvaluationEngine
 from faults.injector import FaultInjectingToolExecutor
@@ -65,6 +68,12 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
             fault_activation_records=fault_executor.activation_records,
         )
     )
+    evaluation_dag = validate_dag(EvaluationDAGBuilder().build(
+        collector.trace,
+        evaluation,
+        fault_executor.activation_records,
+    ))
+    root_cause_report = RootCauseAnalyzer().analyze(evaluation_dag, evaluation)
 
     print("AgentEval Foundry")
     print("=================")
@@ -125,6 +134,37 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
                 f"  {evidence.assertion}: expected={evidence.expected!r} "
                 f"observed={evidence.observed!r}{evidence_span}"
             )
+    print()
+    print("Evaluation DAG:")
+    for node in evaluation_dag.nodes:
+        parents = ", ".join(str(item) for item in node.parent_ids) or "ROOT"
+        faults = ", ".join(str(item.fault_type) for item in node.attached_faults) or "none"
+        print(
+            f"- {node.node_type}: {node.name} | status={node.evaluation_status} | "
+            f"parents={parents} | grades={len(node.attached_grades)} | faults={faults}"
+        )
+    print()
+    print("Root-cause analysis:")
+    print(root_cause_report.summary)
+    for attribution in root_cause_report.attributions:
+        affected = ", ".join(str(item) for item in attribution.affected_node_ids)
+        print(
+            f"- root={attribution.root_node_id} | confidence={attribution.confidence:.2f} | "
+            f"affected={affected}"
+        )
+        print(f"  Reason: {attribution.reason}")
+        if attribution.fault_id:
+            print(f"  Fault ID: {attribution.fault_id}")
+        for evidence in attribution.evidence:
+            print(
+                f"  Evidence {evidence.assertion}: expected={evidence.expected!r} "
+                f"observed={evidence.observed!r}"
+            )
+    if root_cause_report.unattributed_failed_nodes:
+        print(f"Unattributed failed nodes: {root_cause_report.unattributed_failed_nodes}")
+    if root_cause_report.unattributed_grades:
+        names = [grade.grader_name for grade in root_cause_report.unattributed_grades]
+        print(f"Unattributed failed grades: {names}")
 
 
 def main() -> None:
