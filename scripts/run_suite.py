@@ -15,6 +15,8 @@ from evaluation.engine import DeterministicEvaluationEngine
 from evaluation.taxonomy.catalog import FailureTaxonomyCatalog
 from evaluation.taxonomy.classifier import FailureTaxonomyClassifier
 from faults.injector import FaultInjectingToolExecutor
+from persistence.models import RunBundle
+from persistence.repository import PersistenceError, RunRepository
 from scenarios.loader import load_scenario
 from tools.mock_tools import build_default_tool_registry
 from tracing.collector import TraceCollector
@@ -35,10 +37,27 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_SCENARIO_PATH,
         help=f"Scenario YAML path. Defaults to {DEFAULT_SCENARIO_PATH}.",
     )
+    parser.add_argument(
+        "--persist",
+        action="store_true",
+        help="Persist the completed run to PostgreSQL.",
+    )
     return parser.parse_args()
 
 
-async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
+async def _persist_bundle(bundle: RunBundle) -> None:
+    from persistence.postgres.config import PostgresConfig
+    from persistence.postgres.repository import PostgresRunRepository
+
+    implementation = PostgresRunRepository.from_config(PostgresConfig.from_env())
+    repository: RunRepository = implementation
+    try:
+        await repository.save(bundle)
+    finally:
+        await implementation.close()
+
+
+async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH, *, persist: bool = False) -> None:
     try:
         scenario = load_scenario(scenario_path)
     except FileNotFoundError as exc:
@@ -81,6 +100,16 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
         evaluation,
         root_cause_report,
         fault_executor.activation_records,
+    )
+    bundle = RunBundle.from_pipeline(
+        scenario=scenario,
+        agent_result=result,
+        execution_trace=collector.trace,
+        fault_activation_records=fault_executor.activation_records,
+        evaluation_report=evaluation,
+        evaluation_dag=evaluation_dag,
+        root_cause_report=root_cause_report,
+        failure_classification_report=classification_report,
     )
 
     print("AgentEval Foundry")
@@ -196,11 +225,19 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
                 for alternative in classification.alternative_paths
             ]
             print(f"  Alternative paths: {alternatives}")
+    if persist:
+        try:
+            await _persist_bundle(bundle)
+        except PersistenceError as exc:
+            concise_error = str(exc).splitlines()[0]
+            print(f"Persistence failed: {concise_error}")
+            raise SystemExit(1) from exc
+        print(f"Persisted run: {run_id}")
 
 
 def main() -> None:
     args = parse_args()
-    asyncio.run(run(args.scenario))
+    asyncio.run(run(args.scenario, persist=args.persist))
 
 
 if __name__ == "__main__":
