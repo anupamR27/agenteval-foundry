@@ -12,6 +12,8 @@ from dag.propagation import RootCauseAnalyzer
 from dag.validation import validate_dag
 from evaluation.context import EvaluationContext
 from evaluation.engine import DeterministicEvaluationEngine
+from evaluation.taxonomy.catalog import FailureTaxonomyCatalog
+from evaluation.taxonomy.classifier import FailureTaxonomyClassifier
 from faults.injector import FaultInjectingToolExecutor
 from scenarios.loader import load_scenario
 from tools.mock_tools import build_default_tool_registry
@@ -74,6 +76,12 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
         fault_executor.activation_records,
     ))
     root_cause_report = RootCauseAnalyzer().analyze(evaluation_dag, evaluation)
+    classification_report = FailureTaxonomyClassifier(FailureTaxonomyCatalog.load()).classify(
+        evaluation_dag,
+        evaluation,
+        root_cause_report,
+        fault_executor.activation_records,
+    )
 
     print("AgentEval Foundry")
     print("=================")
@@ -165,6 +173,29 @@ async def run(scenario_path: Path = DEFAULT_SCENARIO_PATH) -> None:
     if root_cause_report.unattributed_grades:
         names = [grade.grader_name for grade in root_cause_report.unattributed_grades]
         print(f"Unattributed failed grades: {names}")
+    print()
+    print("Failure taxonomy:")
+    print(f"Taxonomy version: {classification_report.taxonomy_version}")
+    if not classification_report.classifications:
+        print("No evaluation failure required classification.")
+    for classification in classification_report.classifications:
+        path = classification.taxonomy_path
+        affected = ", ".join(str(item) for item in classification.affected_node_ids) or "none"
+        print(f"- {path.level1} / {path.level2} / {path.level3}")
+        print(
+            f"  Root: {classification.root_node_id} | confidence={classification.confidence} "
+            f"({classification.confidence_score:.2f})"
+        )
+        print(f"  Reason: {classification.reason}")
+        if classification.fault_id:
+            print(f"  Fault ID: {classification.fault_id}")
+        print(f"  Affected nodes: {affected}")
+        if classification.alternative_paths:
+            alternatives = [
+                " / ".join(alternative.identifiers)
+                for alternative in classification.alternative_paths
+            ]
+            print(f"  Alternative paths: {alternatives}")
 
 
 def main() -> None:

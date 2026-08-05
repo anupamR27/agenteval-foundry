@@ -1,0 +1,102 @@
+name: AgentEval Foundry Failure Taxonomy
+version: "1.0.0"
+description: Observable, domain-neutral failure categories for deterministic agent evaluation.
+categories:
+  - identifier: PLANNING
+    description: Failures in selecting goals or required steps.
+    categories:
+      - identifier: MISSING_STEP
+        description: A required workflow step was omitted.
+        categories:
+          - identifier: TOOL_OMISSION
+            description: A required tool was not called.
+            remediation_hints: [Review required tool-selection rules.]
+      - identifier: GOAL_MISINTERPRETATION
+        description: The requested objective was interpreted incorrectly.
+        categories:
+          - identifier: INCORRECT_OBJECTIVE
+            description: The agent pursued an objective inconsistent with the request.
+  - identifier: RETRIEVAL
+    description: Failures in obtaining relevant or correct information.
+    categories:
+      - identifier: RESULT_QUALITY
+        description: Retrieved information was unsuitable for the task.
+        categories:
+          - identifier: INCORRECT_RESULT
+            description: Retrieved information was factually incorrect for the request.
+          - identifier: IRRELEVANT_RESULT
+            description: Retrieved information did not address the request.
+          - identifier: MISSING_CONTEXT
+            description: Retrieval omitted context required for a correct answer.
+  - identifier: EXECUTION
+    description: Failures while invoking tools or APIs.
+    categories:
+      - identifier: API_TOOL_FAILURE
+        description: A tool or API did not return its expected operational result.
+        categories:
+          - identifier: TIMEOUT
+            description: Tool execution exceeded its allowed response time.
+          - identifier: ERROR_RESPONSE
+            description: Tool execution returned an explicit error response.
+          - identifier: MALFORMED_RESULT
+            description: Tool execution returned structurally invalid data.
+      - identifier: PARAMETER_ERROR
+        description: Tool invocation parameters were invalid.
+        categories:
+          - identifier: MISSING_REQUIRED_PARAMETER
+            description: A required parameter was absent.
+          - identifier: INVALID_PARAMETER_VALUE
+            description: A parameter value violated its accepted constraints.
+          - identifier: TYPE_MISMATCH
+            description: A parameter had an incompatible type.
+  - identifier: INTEGRATION
+    description: Failures while incorporating context or producing output.
+    categories:
+      - identifier: CONTEXT_LOSS
+        description: Relevant information was lost before final synthesis.
+        categories:
+          - identifier: TRUNCATION
+            description: Context was cut off before its relevant content completed.
+          - identifier: SELECTIVE_OMISSION
+            description: Available relevant context was omitted selectively.
+      - identifier: OUTPUT_QUALITY
+        description: Final output violated deterministic content expectations.
+        categories:
+          - identifier: REQUIRED_CLAIM_MISSING
+            description: A required claim was absent from the final answer.
+          - identifier: FORBIDDEN_CLAIM_PRESENT
+            description: A forbidden claim appeared in the final answer.
+          - identifier: UNSUPPORTED_CLAIM
+            description: The answer included a claim unsupported by available evidence.
+      - identifier: PREMATURE_TERMINATION
+        description: Work stopped before all required output was produced.
+        categories:
+          - identifier: PARTIAL_COMPLETION
+            description: Only part of the expected task was completed.
+  - identifier: ORCHESTRATION
+    description: Failures in workflow dependency structure.
+    categories:
+      - identifier: WORKFLOW_STRUCTURE
+        description: The observed execution graph violated structural expectations.
+        categories:
+          - identifier: DEPENDENCY_VIOLATION
+            description: A step had an invalid dependency relationship.
+          - identifier: UNEXPECTED_BRANCH
+            description: The workflow contained an unexpected execution branch.
+          - identifier: MULTIPLE_ROOTS
+            description: More than one root execution span was present.
+          - identifier: UNREACHABLE_NODE
+            description: A graph node could not be reached from any root.
+  - identifier: UNKNOWN
+    description: Evidence does not support one specific observable category.
+    categories:
+      - identifier: AMBIGUOUS
+        description: Multiple categories remain equally plausible.
+        categories:
+          - identifier: MULTIPLE_PLAUSIBLE_CAUSES
+            description: Available evidence preserves multiple plausible classifications.
+      - identifier: UNCLASSIFIED
+        description: Available evidence is inadequate for a known category.
+        categories:
+          - identifier: INSUFFICIENT_EVIDENCE
+            description: No deterministic signal supports a more specific classification.

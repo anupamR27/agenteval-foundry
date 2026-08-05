@@ -21,7 +21,10 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["aut", "core", "dag", "evaluation", "evaluation.deterministic", "faults", "scenarios", "scripts", "tools", "tracing"]
+packages = ["aut", "core", "dag", "evaluation", "evaluation.deterministic", "evaluation.taxonomy", "faults", "scenarios", "scripts", "tools", "tracing"]
+
+[tool.setuptools.package-data]
+"evaluation.taxonomy" = ["taxonomy.yaml"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
