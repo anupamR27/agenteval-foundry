@@ -26,3 +26,9 @@ def build_default_tool_registry() -> ToolRegistry:
         )
     )
     return registry
+
+# It's exactly like installing WhatsApp.
+
+# Installing WhatsApp doesn't send a message.
+
+# It only makes WhatsApp available.

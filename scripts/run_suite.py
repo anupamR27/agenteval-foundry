@@ -1,5 +1,5 @@
-import argparse
-import asyncio
+import argparse # Interacting with the user via terminal
+import asyncio # Managing time and background tasks
 from pathlib import Path
 from uuid import uuid4
 

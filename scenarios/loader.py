@@ -2,7 +2,8 @@
 #         ↓
 # Read it
 #         ↓
-# Convert it into Python data
+# Convert it into Python data | Parsing and Tokenization: The function takes your YAML text
+#                                and breaks it down into standard tokens
 #         ↓
 # Validate it
 #         ↓
